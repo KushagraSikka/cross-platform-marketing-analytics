@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cross-Channel Advertising Dashboard — January 2024</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0b0e13;--card:#13171e;--card-hover:#171c25;
+  --border:#1c2333;--border-hover:#2b3650;
+  --text:#eaeff7;--text-2:#a4b0c5;--text-3:#6d7a92;--text-4:#4b5670;
+  --fb:#5b9bd5;--goog:#4caf6e;--tt:#ff3366;
+  --accent:#7c6cf0;
+  --green:#10d4a0;--green-bg:rgba(16,212,160,.1);--green-border:rgba(16,212,160,.2);
+  --yellow:#f5c542;--yellow-bg:rgba(245,197,66,.1);
+  --red:#f05454;--red-bg:rgba(240,84,84,.1);
+  --radius:16px;
+}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.6;-webkit-font-smoothing:antialiased}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+.dashboard{max-width:1360px;margin:0 auto;padding:40px 48px 80px}
+
+/* ═══ HEADER ═══ */
+.header{margin-bottom:48px;padding-bottom:32px;border-bottom:1px solid var(--border)}
+.header-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px}
+.header h1{font-size:28px;font-weight:700;letter-spacing:-.5px}
+.header h1 .sep{color:var(--accent);margin:0 6px;font-weight:300}
+.badge{background:linear-gradient(135deg,#7c6cf0,#5b4de0);color:#fff;font-size:10px;padding:5px 12px;border-radius:20px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;margin-left:12px;vertical-align:middle}
+.header .subtitle{font-size:15px;color:var(--text-3);font-weight:400;margin-top:4px}
+.header-meta{font-size:12px;color:var(--text-3);font-family:'JetBrains Mono',monospace;text-align:right;line-height:1.8}
+
+/* ═══ SECTION LABEL ═══ */
+.section{margin-bottom:48px}
+.section-label{font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-3);margin-bottom:20px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+
+/* ═══ KPI CARDS ═══ */
+.kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:16px}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:24px 28px;position:relative;overflow:hidden;transition:all .2s}
+.kpi:hover{border-color:var(--border-hover);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.3)}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.kpi:nth-child(1)::before{background:var(--accent)}
+.kpi:nth-child(2)::before{background:var(--fb)}
+.kpi:nth-child(3)::before{background:var(--tt)}
+.kpi:nth-child(4)::before{background:var(--green)}
+.kpi:nth-child(5)::before{background:var(--goog)}
+.kpi-label{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text-3);font-weight:600;margin-bottom:12px}
+.kpi-value{font-size:32px;font-weight:800;font-family:'JetBrains Mono',monospace;letter-spacing:-1.5px;line-height:1}
+.kpi-sub{font-size:12px;color:var(--text-4);margin-top:10px;line-height:1.4}
+
+/* ═══ PLATFORM CARDS ═══ */
+.plat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.plat{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:28px 32px;position:relative;overflow:hidden;transition:all .2s}
+.plat:hover{border-color:var(--border-hover)}
+.plat::after{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.plat.fb::after{background:var(--fb)}
+.plat.ggl::after{background:var(--goog)}
+.plat.tt::after{background:var(--tt)}
+.plat-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px}
+.plat-name{font-size:18px;font-weight:700;display:flex;align-items:center;gap:10px}
+.plat-dot{width:12px;height:12px;border-radius:50%}
+.plat.fb .plat-dot{background:var(--fb)}.plat.ggl .plat-dot{background:var(--goog)}.plat.tt .plat-dot{background:var(--tt)}
+.plat-spend{text-align:right}
+.plat-spend-val{font-size:16px;font-weight:700;font-family:'JetBrains Mono',monospace}
+.plat-spend-pct{font-size:11px;color:var(--text-3);margin-top:2px}
+.plat-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;padding-top:20px;border-top:1px solid var(--border)}
+.plat-stat{text-align:center;padding:8px 0}
+.ps-val{font-size:20px;font-weight:700;font-family:'JetBrains Mono',monospace;letter-spacing:-.5px}
+.ps-label{font-size:10px;color:var(--text-3);text-transform:uppercase;letter-spacing:.8px;margin-top:6px;font-weight:500}
+.ps-best .ps-val{color:var(--green)}
+.ps-best .ps-label::after{content:' ★';color:var(--green)}
+
+/* ═══ CHARTS ═══ */
+.chart-grid{display:grid;gap:16px}
+.chart-grid.cols-2{grid-template-columns:1fr 1fr}
+.chart-grid.cols-2-1{grid-template-columns:5fr 3fr}
+.chart-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:28px 32px;transition:border-color .2s}
+.chart-card:hover{border-color:var(--border-hover)}
+.chart-title{font-size:14px;font-weight:600;color:var(--text-2);margin-bottom:20px;display:flex;align-items:center;gap:10px}
+.chart-title .tag{font-size:9px;padding:3px 8px;background:rgba(124,108,240,.1);color:#9b8ff5;border-radius:10px;font-weight:600;letter-spacing:.4px;text-transform:uppercase}
+.chart-area{position:relative;height:340px}
+.chart-area.tall{height:400px}
+
+/* ═══ TABLE ═══ */
+.table-wrap{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:28px 32px;overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;padding:14px 16px;border-bottom:2px solid var(--border);color:var(--text-3);font-size:10px;text-transform:uppercase;letter-spacing:1.2px;font-weight:600;white-space:nowrap}
+td{padding:14px 16px;border-bottom:1px solid var(--border);font-size:13px;white-space:nowrap;transition:background .15s}
+tr:hover td{background:var(--card-hover)}
+tr:nth-child(even) td{background:rgba(255,255,255,.01)}
+tr:nth-child(even):hover td{background:var(--card-hover)}
+.num{font-family:'JetBrains Mono',monospace;font-size:12px}
+.badge-plat{font-size:11px;font-weight:600;padding:4px 12px;border-radius:6px;display:inline-block}
+.badge-plat.fb{background:rgba(91,155,213,.1);color:var(--fb);border:1px solid rgba(91,155,213,.2)}
+.badge-plat.ggl{background:rgba(76,175,110,.1);color:var(--goog);border:1px solid rgba(76,175,110,.2)}
+.badge-plat.tt{background:rgba(255,51,102,.1);color:var(--tt);border:1px solid rgba(255,51,102,.2)}
+.rank{font-size:11px;font-weight:700;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%}
+.rank-1{background:rgba(16,212,160,.12);color:var(--green)}
+.rank-2{background:rgba(91,155,213,.1);color:var(--fb)}
+.rank-3{background:rgba(245,197,66,.1);color:var(--yellow)}
+.val-good{color:var(--green);font-weight:700}
+.val-bad{color:var(--red);font-weight:600}
+/* CPA mini bar */
+.cpa-cell{display:flex;align-items:center;gap:8px;justify-content:flex-end}
+.cpa-bar{width:50px;height:4px;background:var(--border);border-radius:2px;overflow:hidden;flex-shrink:0}
+.cpa-bar-fill{height:100%;border-radius:2px}
+
+/* ═══ INSIGHTS ═══ */
+.insight-row{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.insight{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:32px;position:relative;overflow:hidden;transition:all .2s}
+.insight:hover{border-color:var(--border-hover);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.3)}
+.insight::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.insight.fb::before{background:var(--fb)}
+.insight.ggl::before{background:var(--goog)}
+.insight.tt::before{background:var(--tt)}
+.insight-icon{font-size:28px;margin-bottom:16px}
+.insight-name{font-size:16px;font-weight:700;margin-bottom:6px}
+.insight-tagline{font-size:13px;color:var(--text-3);margin-bottom:20px;font-style:italic}
+.insight-points{list-style:none;padding:0}
+.insight-points li{font-size:13px;color:var(--text-2);line-height:1.7;padding:6px 0;padding-left:20px;position:relative;border-bottom:1px solid rgba(255,255,255,.03)}
+.insight-points li:last-child{border-bottom:none}
+.insight-points li::before{content:'';position:absolute;left:0;top:13px;width:6px;height:6px;border-radius:50%;background:var(--text-4)}
+.insight.fb .insight-points li::before{background:var(--fb)}
+.insight.ggl .insight-points li::before{background:var(--goog)}
+.insight.tt .insight-points li::before{background:var(--tt)}
+.insight-points strong{color:var(--text);font-weight:600}
+.hl{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px;margin:0 2px}
+.hl-g{background:var(--green-bg);color:var(--green)}
+.hl-y{background:var(--yellow-bg);color:var(--yellow)}
+.hl-r{background:var(--red-bg);color:var(--red)}
+
+/* ═══ RECOMMENDATIONS ═══ */
+.reco-row{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.reco{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:32px;transition:all .2s}
+.reco:hover{border-color:var(--border-hover)}
+.reco-tag{font-size:10px;text-transform:uppercase;letter-spacing:1.2px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.reco-tag .dot{width:8px;height:8px;border-radius:50%}
+.reco.scale .reco-tag{color:var(--green)}.reco.scale .dot{background:var(--green)}
+.reco.optimize .reco-tag{color:var(--yellow)}.reco.optimize .dot{background:var(--yellow)}
+.reco.cut .reco-tag{color:var(--red)}.reco.cut .dot{background:var(--red)}
+.reco h4{font-size:16px;font-weight:700;margin-bottom:12px;line-height:1.3}
+.reco p{font-size:13px;color:var(--text-2);line-height:1.7}
+.reco-impact{margin-top:16px;padding-top:14px;border-top:1px solid var(--border);font-size:12px;color:var(--text-3)}
+.reco-impact strong{color:var(--text)}
+
+/* ═══ FOOTER ═══ */
+.footer{text-align:center;padding-top:40px;border-top:1px solid var(--border);color:var(--text-4);font-size:12px;line-height:1.8}
+.footer a{color:var(--accent);text-decoration:none}
+
+/* ═══ ANIMATIONS ═══ */
+@keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.kpi,.plat,.chart-card,.insight,.reco,.table-wrap{animation:rise .5s ease both}
+.kpi:nth-child(1){animation-delay:.04s}.kpi:nth-child(2){animation-delay:.08s}.kpi:nth-child(3){animation-delay:.12s}.kpi:nth-child(4){animation-delay:.16s}.kpi:nth-child(5){animation-delay:.2s}
+
+/* ═══ RESPONSIVE ═══ */
+@media(max-width:1100px){
+  .kpi-row{grid-template-columns:repeat(3,1fr)}
+  .plat-row,.insight-row,.reco-row,.chart-grid.cols-2,.chart-grid.cols-2-1{grid-template-columns:1fr}
+  .dashboard{padding:24px}
+}
+@media(max-width:640px){
+  .kpi-row{grid-template-columns:1fr 1fr}
+  .header-top{flex-direction:column;gap:12px}
+}
+</style>
+</head>
+<body>
+<div class="dashboard">
+
+<!-- ════════════════════════ HEADER ════════════════════════ -->
+<header class="header">
+  <div class="header-top">
+    <div>
+      <h1>Cross-Channel Ad Performance<span class="sep">/</span>Dashboard<span class="badge">Jan 2024</span></h1>
+      <p class="subtitle">Unified performance analysis across Facebook, Google Ads &amp; TikTok</p>
+    </div>
+    <div class="header-meta">
+      3 platforms &middot; 12 campaigns &middot; 30 days<br>
+      330 data points &middot; $130.2K total spend
+    </div>
+  </div>
+</header>
+
+<!-- ════════════════════════ KPIs ════════════════════════ -->
+<div class="section">
+  <div class="section-label">Overview</div>
+  <div class="kpi-row">
+    <div class="kpi">
+      <div class="kpi-label">Total Spend</div>
+      <div class="kpi-value">$130.2K</div>
+      <div class="kpi-sub">Across all 3 channels</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Impressions</div>
+      <div class="kpi-value">40.5M</div>
+      <div class="kpi-sub">TikTok drives 70.9%</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Conversions</div>
+      <div class="kpi-value">13,363</div>
+      <div class="kpi-sub">From 688K total clicks</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Blended CPA</div>
+      <div class="kpi-value">$9.75</div>
+      <div class="kpi-sub">Facebook best at $7.64</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Avg. Conv Rate</div>
+      <div class="kpi-value">1.94%</div>
+      <div class="kpi-sub">Google leads at 3.07%</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════ PLATFORMS ════════════════════════ -->
+<div class="section">
+  <div class="section-label">Platform Comparison</div>
+  <div class="plat-row">
+    <div class="plat fb">
+      <div class="plat-top">
+        <div class="plat-name"><div class="plat-dot"></div>Facebook</div>
+        <div class="plat-spend"><div class="plat-spend-val">$18,292</div><div class="plat-spend-pct">14% of total budget</div></div>
+      </div>
+      <div class="plat-stats">
+        <div class="plat-stat"><div class="ps-val">1.96%</div><div class="ps-label">CTR</div></div>
+        <div class="plat-stat"><div class="ps-val">$0.21</div><div class="ps-label">CPC</div></div>
+        <div class="plat-stat ps-best"><div class="ps-val">$7.64</div><div class="ps-label">CPA</div></div>
+        <div class="plat-stat"><div class="ps-val">2.69%</div><div class="ps-label">CVR</div></div>
+      </div>
+    </div>
+    <div class="plat ggl">
+      <div class="plat-top">
+        <div class="plat-name"><div class="plat-dot"></div>Google</div>
+        <div class="plat-spend"><div class="plat-spend-val">$37,686</div><div class="plat-spend-pct">29% of total budget</div></div>
+      </div>
+      <div class="plat-stats">
+        <div class="plat-stat"><div class="ps-val">1.90%</div><div class="ps-label">CTR</div></div>
+        <div class="plat-stat"><div class="ps-val">$0.27</div><div class="ps-label">CPC</div></div>
+        <div class="plat-stat"><div class="ps-val">$8.93</div><div class="ps-label">CPA</div></div>
+        <div class="plat-stat ps-best"><div class="ps-val">3.07%</div><div class="ps-label">CVR</div></div>
+      </div>
+    </div>
+    <div class="plat tt">
+      <div class="plat-top">
+        <div class="plat-name"><div class="plat-dot"></div>TikTok</div>
+        <div class="plat-spend"><div class="plat-spend-val">$74,267</div><div class="plat-spend-pct">57% of total budget</div></div>
+      </div>
+      <div class="plat-stats">
+        <div class="plat-stat"><div class="ps-val">1.61%</div><div class="ps-label">CTR</div></div>
+        <div class="plat-stat ps-best"><div class="ps-val">$0.16</div><div class="ps-label">CPC</div></div>
+        <div class="plat-stat"><div class="ps-val">$11.00</div><div class="ps-label">CPA</div></div>
+        <div class="plat-stat"><div class="ps-val">1.46%</div><div class="ps-label">CVR</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════ SPEND CHARTS ════════════════════════ -->
+<div class="section">
+  <div class="section-label">Spend Analysis</div>
+  <div class="chart-grid cols-2-1">
+    <div class="chart-card">
+      <div class="chart-title">Daily Spend Trend <span class="tag">30 Days</span></div>
+      <div class="chart-area"><canvas id="spendLine"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Budget Split</div>
+      <div class="chart-area"><canvas id="spendDonut"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════ CONVERSION CHARTS ════════════════════════ -->
+<div class="section">
+  <div class="section-label">Conversions &amp; Efficiency</div>
+  <div class="chart-grid cols-2">
+    <div class="chart-card">
+      <div class="chart-title">Daily Conversions <span class="tag">Stacked</span></div>
+      <div class="chart-area"><canvas id="convBar"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Cost Per Acquisition by Campaign <span class="tag">Lower = Better</span></div>
+      <div class="chart-area tall"><canvas id="cpaBar"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════ TABLE ════════════════════════ -->
+<div class="section">
+  <div class="section-label">All 12 Campaigns &mdash; Ranked by CPA</div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th>#</th><th>Platform</th><th>Campaign</th>
+        <th style="text-align:right">Spend</th>
+        <th style="text-align:right">Impressions</th>
+        <th style="text-align:right">Clicks</th>
+        <th style="text-align:right">Conversions</th>
+        <th style="text-align:right">CTR</th>
+        <th style="text-align:right">CPC</th>
+        <th style="text-align:right">CPA</th>
+        <th style="text-align:right">CVR</th>
+      </tr></thead>
+      <tbody id="tbl"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ════════════════════════ INSIGHTS ════════════════════════ -->
+<div class="section">
+  <div class="section-label">Key Insights</div>
+  <div class="insight-row">
+    <div class="insight fb">
+      <div class="insight-icon">&#127919;</div>
+      <div class="insight-name">Facebook</div>
+      <div class="insight-tagline">Best efficiency on smallest budget</div>
+      <ul class="insight-points">
+        <li>Lowest CPA across all platforms at <span class="hl hl-g">$7.64</span></li>
+        <li><strong>Conversions Retargeting</strong> achieves <span class="hl hl-g">$5.95 CPA</span> with <span class="hl hl-g">6.26% CVR</span> &mdash; best conversion rate of any campaign</li>
+        <li>Only uses <strong>14% of budget</strong> but delivers strong ROI via retargeting cart abandoners</li>
+        <li>Video Views campaign at <span class="hl hl-y">$14.96 CPA</span> is the weakest &mdash; consider reallocating to retargeting</li>
+      </ul>
+    </div>
+    <div class="insight ggl">
+      <div class="insight-icon">&#128269;</div>
+      <div class="insight-name">Google</div>
+      <div class="insight-tagline">Highest conversion rate, one costly outlier</div>
+      <ul class="insight-points">
+        <li>Best overall conversion rate at <span class="hl hl-g">3.07%</span> driven by high-intent search traffic</li>
+        <li><strong>Search Brand Terms</strong> is the #1 campaign overall: <span class="hl hl-g">$5.10 CPA</span> and 5.22% CTR</li>
+        <li><strong>Shopping</strong> is a volume winner &mdash; 1,801 conversions at a solid <span class="hl hl-g">$6.34 CPA</span></li>
+        <li><strong>Search Generic Terms</strong> is the biggest problem: <span class="hl hl-r">$24.80 CPA</span> burning $15.5K (41% of Google budget)</li>
+      </ul>
+    </div>
+    <div class="insight tt">
+      <div class="insight-icon">&#128241;</div>
+      <div class="insight-name">TikTok</div>
+      <div class="insight-tagline">Massive reach, cheapest clicks, higher CPA</div>
+      <ul class="insight-points">
+        <li>Dominates impressions: <strong>28.7M</strong> (70.9% of all impressions across platforms)</li>
+        <li>Cheapest traffic anywhere at <span class="hl hl-g">$0.16 CPC</span> &mdash; great for awareness</li>
+        <li><strong>Influencer Collab</strong> is the standout at <span class="hl hl-g">$9.92 CPA</span> &mdash; creator content converts better</li>
+        <li>Blended CPA of <span class="hl hl-y">$11.00</span> is 44% higher than Facebook &mdash; conversion optimization needed</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════ RECOMMENDATIONS ════════════════════════ -->
+<div class="section">
+  <div class="section-label">What to Do Next</div>
+  <div class="reco-row">
+    <div class="reco scale">
+      <div class="reco-tag"><div class="dot"></div>Scale Up</div>
+      <h4>Double Down on Facebook Retargeting</h4>
+      <p>Conversions Retargeting delivers $5.95 CPA on just $6.4K spend. It has headroom to scale. Test increasing budget to $12&ndash;15K/month while watching frequency and CPA closely. Also expand Google Brand Search coverage ($5.10 CPA).</p>
+      <div class="reco-impact"><strong>Potential impact:</strong> +800&ndash;1,200 conversions/month at sub-$7 CPA</div>
+    </div>
+    <div class="reco optimize">
+      <div class="reco-tag"><div class="dot"></div>Optimize</div>
+      <h4>Fix Google Generic Search</h4>
+      <p>This campaign burns $15.5K at $24.80 CPA &mdash; nearly 5x your brand search cost. Add negative keywords, tighten match types, layer audiences, and cut bids 30&ndash;40%. Target bringing CPA under $12.</p>
+      <div class="reco-impact"><strong>Potential impact:</strong> Save $5&ndash;8K/month or get 2x conversions for same spend</div>
+    </div>
+    <div class="reco cut">
+      <div class="reco-tag"><div class="dot"></div>Investigate</div>
+      <h4>Apply Influencer Learnings to All TikTok</h4>
+      <p>Influencer Collab ($9.92 CPA) outperforms Awareness GenZ ($13.00) and Traffic ($14.06) by 24&ndash;29%. Analyze which creator formats and hooks drive conversions, then replicate across other TikTok campaigns.</p>
+      <div class="reco-impact"><strong>Potential impact:</strong> Reduce TikTok blended CPA from $11.00 to ~$10.00, saving ~$6.7K/month</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════ FOOTER ════════════════════════ -->
+<div class="footer">
+  Cross-Channel Ad Performance Dashboard &middot; January 1&ndash;30, 2024 &middot; 330 rows across 3 platforms<br>
+  Source: unified_ads_performance.csv &middot; <a href="https://public.tableau.com/authoring/Cross-PlatformAdPerformanceJan2024/Cross-PlatformAdPerformance-Jan2024" target="_blank">View on Tableau Public</a>
+</div>
+
+</div><!-- /dashboard -->
+
+<script>
+// ═══════════════════════ DATA ═══════════════════════
+const daily=[{d:"2024-01-01",fs:533.2,fc:69,gs:1225.9,gc:135,ts:1481.2,tc:124},{d:"2024-01-02",fs:554,fc:73,gs:1225.6,gc:140,ts:1552.4,tc:132},{d:"2024-01-03",fs:546.9,fc:73,gs:960.3,gc:79,ts:1948,tc:183},{d:"2024-01-04",fs:477.4,fc:62,gs:803.5,gc:129,ts:1810.2,tc:159},{d:"2024-01-05",fs:446.3,fc:55,gs:953.1,gc:83,ts:2050.9,tc:194},{d:"2024-01-06",fs:412.4,fc:40,gs:806.5,gc:129,ts:1856.8,tc:163},{d:"2024-01-07",fs:591.6,fc:83,gs:1265.6,gc:142,ts:1681.2,tc:143},{d:"2024-01-08",fs:446.1,fc:56,gs:972.8,gc:80,ts:2087.7,tc:199},{d:"2024-01-09",fs:435.1,fc:47,gs:817.7,gc:131,ts:1961,tc:173},{d:"2024-01-10",fs:596.5,fc:84,gs:1239,gc:135,ts:1674.9,tc:144},{d:"2024-01-11",fs:732.3,fc:100,gs:1464,gc:164,ts:2816.1,tc:260},{d:"2024-01-12",fs:689.2,fc:89,gs:1407.2,gc:153,ts:2709.3,tc:246},{d:"2024-01-13",fs:588.8,fc:72,gs:1248.7,gc:136,ts:2466.9,tc:225},{d:"2024-01-14",fs:553.3,fc:65,gs:1197.9,gc:129,ts:2386.4,tc:216},{d:"2024-01-15",fs:637.9,fc:82,gs:1334.9,gc:146,ts:2560.1,tc:233},{d:"2024-01-16",fs:705.2,fc:95,gs:1408.1,gc:158,ts:2893.6,tc:266},{d:"2024-01-17",fs:748.3,fc:105,gs:1471.6,gc:166,ts:3048.2,tc:280},{d:"2024-01-18",fs:715.2,fc:97,gs:1431.4,gc:160,ts:2959.3,tc:271},{d:"2024-01-19",fs:673.5,fc:89,gs:1374.4,gc:151,ts:2826.1,tc:258},{d:"2024-01-20",fs:598.8,fc:76,gs:1234,gc:133,ts:2607.2,tc:238},{d:"2024-01-21",fs:544.8,fc:68,gs:1188.1,gc:128,ts:2422.5,tc:221},{d:"2024-01-22",fs:618.6,fc:81,gs:1324,gc:146,ts:2731.5,tc:246},{d:"2024-01-23",fs:674,fc:88,gs:1401,gc:158,ts:2893.6,tc:266},{d:"2024-01-24",fs:725,fc:99,gs:1481.3,gc:169,ts:3171.7,tc:290},{d:"2024-01-25",fs:763.1,fc:107,gs:1529.5,gc:176,ts:3258.8,tc:298},{d:"2024-01-26",fs:728,fc:100,gs:1455.4,gc:164,ts:3048.2,tc:280},{d:"2024-01-27",fs:626.9,fc:83,gs:1398.7,gc:155,ts:2826.1,tc:258},{d:"2024-01-28",fs:584.8,fc:75,gs:1297,gc:138,ts:2675.5,tc:247},{d:"2024-01-29",fs:657.3,fc:88,gs:1363.4,gc:149,ts:2893.6,tc:266},{d:"2024-01-30",fs:687.5,fc:94,gs:1405.6,gc:156,ts:2967.7,tc:271}];
+
+const camps=[
+  {p:"Google",n:"Search_Brand_Terms",s:7368,i:740093,cl:38603,cv:1445,ctr:5.22,cpc:0.19,cpa:5.10,cvr:3.74},
+  {p:"Facebook",n:"Conversions_Retargeting",s:6371,i:369383,cl:17103,cv:1070,ctr:4.63,cpc:0.37,cpa:5.95,cvr:6.26},
+  {p:"Google",n:"Shopping_All_Products",s:11417,i:1871485,cl:62446,cv:1801,ctr:3.34,cpc:0.18,cpa:6.34,cvr:2.88},
+  {p:"Facebook",n:"Traffic_Drive_Jan",s:5574,i:993150,cl:36560,cv:741,ctr:3.68,cpc:0.15,cpa:7.52,cvr:2.03},
+  {p:"Facebook",n:"Brand_Awareness_Q1",s:4088,i:1425359,cl:28917,cv:433,ctr:2.03,cpc:0.14,cpa:9.44,cvr:1.50},
+  {p:"Google",n:"Display_Remarketing",s:3352,i:3396726,cl:12379,cv:345,ctr:0.36,cpc:0.27,cpa:9.72,cvr:2.79},
+  {p:"TikTok",n:"Influencer_Collab",s:26312,i:10513148,cl:170684,cv:2653,ctr:1.62,cpc:0.15,cpa:9.92,cvr:1.55},
+  {p:"TikTok",n:"Conversion_Focus",s:20606,i:3970406,cl:75914,cv:2061,ctr:1.91,cpc:0.27,cpa:10.00,cvr:2.71},
+  {p:"TikTok",n:"Awareness_GenZ",s:15640,i:8059087,cl:118539,cv:1203,ctr:1.47,cpc:0.13,cpa:13.00,cvr:1.01},
+  {p:"TikTok",n:"Traffic_Campaign",s:11708,i:6165526,cl:96707,cv:833,ctr:1.57,cpc:0.12,cpa:14.06,cvr:0.86},
+  {p:"Facebook",n:"Video_Views_Campaign",s:2259,i:1753582,cl:6319,cv:151,ctr:0.36,cpc:0.36,cpa:14.96,cvr:2.39},
+  {p:"Google",n:"Search_Generic_Terms",s:15549,i:1215240,cl:24162,cv:627,ctr:1.99,cpc:0.64,cpa:24.80,cvr:2.59}
+];
+
+// ═══════════════════════ CHART SETUP ═══════════════════════
+const FB='#5b9bd5',GG='#4caf6e',TT='#ff3366';
+const labels=daily.map(d=>d.d.slice(5));
+
+Chart.defaults.color='#6d7a92';
+Chart.defaults.borderColor='#1c233322';
+Chart.defaults.font.family="'Inter',system-ui,sans-serif";
+Chart.defaults.font.size=11;
+
+const grid='#1c233844';
+const tip={backgroundColor:'#1a2030',borderColor:'#2b3650',borderWidth:1,titleFont:{weight:'600',size:12},bodyFont:{family:"'JetBrains Mono',monospace",size:11},padding:14,cornerRadius:10,displayColors:true,boxPadding:5};
+
+// ── Spend Line ──
+new Chart(document.getElementById('spendLine'),{
+  type:'line',
+  data:{labels,datasets:[
+    {label:'Facebook',data:daily.map(d=>d.fs),borderColor:FB,backgroundColor:FB+'15',fill:true,tension:.4,borderWidth:2.5,pointRadius:0,pointHoverRadius:6,pointHoverBackgroundColor:FB},
+    {label:'Google',data:daily.map(d=>d.gs),borderColor:GG,backgroundColor:GG+'15',fill:true,tension:.4,borderWidth:2.5,pointRadius:0,pointHoverRadius:6,pointHoverBackgroundColor:GG},
+    {label:'TikTok',data:daily.map(d=>d.ts),borderColor:TT,backgroundColor:TT+'15',fill:true,tension:.4,borderWidth:2.5,pointRadius:0,pointHoverRadius:6,pointHoverBackgroundColor:TT}
+  ]},
+  options:{responsive:true,maintainAspectRatio:false,interaction:{intersect:false,mode:'index'},
+    plugins:{legend:{position:'top',labels:{usePointStyle:true,pointStyle:'circle',padding:24,font:{size:12,weight:'500'}}},tooltip:{...tip,callbacks:{label:c=>' '+c.dataset.label+': $'+c.raw.toLocaleString(undefined,{minimumFractionDigits:0})}}},
+    scales:{x:{grid:{display:false},ticks:{maxTicksLimit:8,font:{size:10}}},y:{beginAtZero:true,ticks:{callback:v=>'$'+v.toLocaleString(),font:{size:10}},grid:{color:grid}}}}
+});
+
+// ── Spend Donut ──
+new Chart(document.getElementById('spendDonut'),{
+  type:'doughnut',
+  data:{labels:['Facebook  $18.3K','Google  $37.7K','TikTok  $74.3K'],datasets:[{data:[18292,37686,74267],backgroundColor:[FB,GG,TT],borderWidth:0,hoverOffset:12,spacing:2}]},
+  options:{responsive:true,maintainAspectRatio:false,cutout:'66%',
+    plugins:{legend:{position:'bottom',labels:{usePointStyle:true,pointStyle:'circle',padding:20,font:{size:12,weight:'500'}}},tooltip:{...tip,callbacks:{label:c=>'  $'+c.raw.toLocaleString()+' ('+((c.raw/130245)*100).toFixed(1)+'%)'}}}}
+});
+
+// ── Conversions Stacked Bar ──
+new Chart(document.getElementById('convBar'),{
+  type:'bar',
+  data:{labels,datasets:[
+    {label:'Facebook',data:daily.map(d=>d.fc),backgroundColor:FB+'cc',borderRadius:2,barPercentage:.82},
+    {label:'Google',data:daily.map(d=>d.gc),backgroundColor:GG+'cc',borderRadius:2,barPercentage:.82},
+    {label:'TikTok',data:daily.map(d=>d.tc),backgroundColor:TT+'cc',borderRadius:2,barPercentage:.82}
+  ]},
+  options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{position:'top',labels:{usePointStyle:true,pointStyle:'circle',padding:24,font:{size:12,weight:'500'}}},tooltip:{...tip,callbacks:{label:c=>' '+c.dataset.label+': '+c.raw+' conversions'}}},
+    scales:{x:{stacked:true,grid:{display:false},ticks:{maxTicksLimit:8,font:{size:10}}},y:{stacked:true,grid:{color:grid},ticks:{font:{size:10}}}}}
+});
+
+// ── CPA Horizontal Bar ──
+const sorted=[...camps].sort((a,b)=>a.cpa-b.cpa);
+const cpaCols=sorted.map(c=>c.p==='Facebook'?FB:c.p==='Google'?GG:TT);
+new Chart(document.getElementById('cpaBar'),{
+  type:'bar',
+  data:{labels:sorted.map(c=>c.n.replace(/_/g,' ')),datasets:[{data:sorted.map(c=>c.cpa),backgroundColor:cpaCols.map(c=>c+'bb'),borderColor:cpaCols,borderWidth:1.5,borderRadius:5,barThickness:22}]},
+  options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',
+    plugins:{legend:{display:false},tooltip:{...tip,callbacks:{label:c=>'  CPA: $'+c.raw.toFixed(2)+' ('+sorted[c.dataIndex].p+')'}}},
+    scales:{
+      x:{ticks:{callback:v=>'$'+v,font:{size:10}},grid:{color:grid},title:{display:true,text:'Cost Per Acquisition ($)',font:{size:11,weight:'500'},color:'#6d7a92',padding:8}},
+      y:{grid:{display:false},ticks:{font:{size:11,weight:'500'},color:'#a4b0c5',padding:8}}
+    }}
+});
+
+// ═══════════════════════ TABLE ═══════════════════════
+const tbody=document.getElementById('tbl');
+const pc={Facebook:'fb',Google:'ggl',TikTok:'tt'};
+const fmt=n=>n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e3?Math.round(n/1e3).toLocaleString()+'K':n.toLocaleString();
+const maxCpa=Math.max(...camps.map(c=>c.cpa));
+
+sorted.forEach((c,i)=>{
+  const r=i+1;
+  const rc=r<=3?'rank-'+r:'';
+  const cpaGood=c.cpa<=7?'val-good':c.cpa>=20?'val-bad':'';
+  const cvrGood=c.cvr>=3?'val-good':'';
+  const barW=Math.round(c.cpa/maxCpa*100);
+  const barCol=c.p==='Facebook'?FB:c.p==='Google'?GG:TT;
+  tbody.innerHTML+=`<tr>
+    <td><span class="rank ${rc}">${r}</span></td>
+    <td><span class="badge-plat ${pc[c.p]}">${c.p}</span></td>
+    <td style="font-weight:600">${c.n.replace(/_/g,' ')}</td>
+    <td class="num" style="text-align:right">$${c.s.toLocaleString()}</td>
+    <td class="num" style="text-align:right">${fmt(c.i)}</td>
+    <td class="num" style="text-align:right">${fmt(c.cl)}</td>
+    <td class="num" style="text-align:right">${c.cv.toLocaleString()}</td>
+    <td class="num" style="text-align:right">${c.ctr.toFixed(2)}%</td>
+    <td class="num" style="text-align:right">$${c.cpc.toFixed(2)}</td>
+    <td style="text-align:right"><div class="cpa-cell"><span class="num ${cpaGood}">$${c.cpa.toFixed(2)}</span><div class="cpa-bar"><div class="cpa-bar-fill" style="width:${barW}%;background:${barCol}"></div></div></div></td>
+    <td class="num ${cvrGood}" style="text-align:right">${c.cvr.toFixed(2)}%</td>
+  </tr>`;
+});
+</script>
+</body>
+</html>

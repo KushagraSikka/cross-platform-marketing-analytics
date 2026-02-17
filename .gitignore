@@ -1,0 +1,35 @@
+# IDE / Editor
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+
+# Claude Code / Playwright
+.claude/
+.playwright-mcp/
+
+# Temp files
+*.tmp
+*.log
+
+# Root-level debug screenshots (Playwright artifacts)
+/after_*.png
+/edit_colors_*.png
+/text_editor_*.png
+/dashboard_a3_size.png
+/dashboard_v2_*.png
+/dashboard_view.png
+/dashboard-*.png
+/tableau_current_state.png
