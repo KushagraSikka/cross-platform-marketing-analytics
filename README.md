@@ -1,12 +1,12 @@
 # Cross-Platform Marketing Analytics — January 2024
 
-> End-to-end marketing data pipeline: raw ad-platform CSVs &rarr; BigQuery &rarr; SQL transformations &rarr; Looker Studio + Tableau dashboards
+> End-to-end marketing data pipeline: raw ad-platform CSVs &rarr; BigQuery &rarr; SQL transformations &rarr; Looker Studio dashboard
 
 ---
 
 ## What I Built
 
-A complete analytics pipeline that unifies advertising data from **Facebook**, **Google**, and **TikTok** into a single BigQuery table, validates it with 13 data-quality checks, layers 3 analytics views on top, and visualizes everything in interactive Looker Studio and Tableau dashboards.
+A complete analytics pipeline that unifies advertising data from **Facebook**, **Google**, and **TikTok** into a single BigQuery table, validates it with 13 data-quality checks, layers 3 analytics views on top, and visualizes everything in an interactive Looker Studio dashboard.
 
 The pipeline processes **328 rows** across 3 platforms, 12 campaigns, and 31 days of January 2024 ad performance data.
 
@@ -26,10 +26,8 @@ The pipeline processes **328 rows** across 3 platforms, 12 campaigns, and 31 day
 
 ## How to Use
 
-### Live Dashboards
+### Live Dashboard
 **Looker Studio:** [Cross-Platform Ad Performance — Jan 2024](https://lookerstudio.google.com/reporting/a07e988b-31d2-4105-93e5-56d4fc5b157f/page/TlJ0C)
-
-**Tableau Public:** [Cross-Platform Ad Performance — Jan 2024](https://public.tableau.com/app/profile/kushagra.sikka/viz/Cross-PlatformAdPerformanceJan2024/)
 
 ### HTML Dashboard (offline)
 Open `dashboard/cross_platform_dashboard.html` in any browser — no server needed.
@@ -48,7 +46,6 @@ Open `dashboard/cross_platform_dashboard.html` in any browser — no server need
 | **BigQuery** | Free tier, serverless, native SQL — matches JD requirement |
 | **SQL** | Core data transformation language; listed in JD |
 | **Looker Studio** | Native BigQuery integration; interactive filters |
-| **Tableau Public** | Free interactive dashboards; JD lists Tableau |
 | **Python / Pandas** | Automated CSV unification step |
 | **Git / GitHub** | Version control; JD lists Git proficiency |
 
@@ -67,7 +64,7 @@ I used **Claude** (Anthropic) as a productivity tool during this project for doc
 | **Cross-platform schema mismatch** — each platform uses different column names | CTE-per-platform pattern mapping to standardized names (`ad_group_id`, `cost`) |
 | **Division by zero in metrics** — paused ad groups with 0 impressions/clicks | `SAFE_DIVIDE` returns NULL instead of erroring |
 | **Platform-specific metrics** — each platform has unique fields (reach, quality_score, etc.) | Typed NULL columns preserve the unified schema while keeping platform data accessible |
-| **Dashboard interactivity** | Tableau Public + standalone HTML dashboard with Chart.js for offline use |
+| **Dashboard interactivity** | Looker Studio with filters + standalone HTML dashboard with Chart.js for offline use |
 
 ---
 
@@ -138,7 +135,7 @@ Run all 3 CREATE VIEW statements
 
 ### 5. Explore the Dashboard
 ```
-Open the Tableau Public link above, or
+Open the Looker Studio link above, or
 Open dashboard/cross_platform_dashboard.html locally
 ```
 

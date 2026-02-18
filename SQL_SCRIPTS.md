@@ -72,7 +72,7 @@ After running, execute the 5 verification queries at the bottom of the script.
 Step 1 → sql/data_quality_checks.sql     (validate raw data)
 Step 2 → sql/unified_model.sql            (create unified table)
 Step 3 → sql/analytics_views.sql          (create analytics views)
-Step 4 → Open Tableau / HTML dashboard    (visualize)
+Step 4 → Open Looker Studio / HTML dashboard  (visualize)
 ```
 
 ### Expected Outputs
