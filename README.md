@@ -1,12 +1,12 @@
 # Cross-Platform Marketing Analytics — January 2024
 
-> End-to-end marketing data pipeline: raw ad-platform CSVs &rarr; BigQuery &rarr; SQL transformations &rarr; Tableau dashboard
+> End-to-end marketing data pipeline: raw ad-platform CSVs &rarr; BigQuery &rarr; SQL transformations &rarr; Looker Studio + Tableau dashboards
 
 ---
 
 ## What I Built
 
-A complete analytics pipeline that unifies advertising data from **Facebook**, **Google**, and **TikTok** into a single BigQuery table, validates it with 13 data-quality checks, layers 3 analytics views on top, and visualizes everything in an interactive Tableau dashboard.
+A complete analytics pipeline that unifies advertising data from **Facebook**, **Google**, and **TikTok** into a single BigQuery table, validates it with 13 data-quality checks, layers 3 analytics views on top, and visualizes everything in interactive Looker Studio and Tableau dashboards.
 
 The pipeline processes **328 rows** across 3 platforms, 12 campaigns, and 31 days of January 2024 ad performance data.
 
@@ -26,7 +26,9 @@ The pipeline processes **328 rows** across 3 platforms, 12 campaigns, and 31 day
 
 ## How to Use
 
-### Live Dashboard
+### Live Dashboards
+**Looker Studio:** [Cross-Platform Ad Performance — Jan 2024](https://lookerstudio.google.com/reporting/a07e988b-31d2-4105-93e5-56d4fc5b157f/page/TlJ0C)
+
 **Tableau Public:** [Cross-Platform Ad Performance — Jan 2024](https://public.tableau.com/app/profile/kushagra.sikka/viz/Cross-PlatformAdPerformanceJan2024/)
 
 ### HTML Dashboard (offline)
@@ -43,24 +45,18 @@ Open `dashboard/cross_platform_dashboard.html` in any browser — no server need
 
 | Tool | Why I Chose It |
 |------|---------------|
-| **BigQuery** | Free tier handles this data size; serverless means no infrastructure to manage; native SQL support matches the JD requirement |
-| **SQL** | Universal language for data transformation; JD specifically lists SQL expertise as core requirement |
-| **Tableau Public** | Free, interactive dashboards with filtering; JD lists Tableau as a required BI tool |
-| **Python / Pandas** | Automated the CSV unification step; reproducible data prep |
-| **Git / GitHub** | Version control for SQL scripts and documentation; JD lists Git proficiency |
+| **BigQuery** | Free tier, serverless, native SQL — matches JD requirement |
+| **SQL** | Core data transformation language; listed in JD |
+| **Looker Studio** | Native BigQuery integration; interactive filters |
+| **Tableau Public** | Free interactive dashboards; JD lists Tableau |
+| **Python / Pandas** | Automated CSV unification step |
+| **Git / GitHub** | Version control; JD lists Git proficiency |
 
 ---
 
 ## AI Productivity Note
 
-I used **Claude** (Anthropic) as a productivity tool throughout this project:
-
-- **Code generation** — Drafted initial SQL CTEs and data quality check patterns, then reviewed and refined each query
-- **Debugging** — Identified schema mismatches across platforms (e.g., Facebook `ad_set_id` vs Google `ad_group_id`)
-- **Dashboard automation** — Assisted with Tableau formatting and the standalone HTML dashboard
-- **Documentation** — Helped structure this README and SQL documentation for clarity
-
-AI was used as an accelerator, not a replacement for analytical thinking. Every query was reviewed for correctness and business relevance.
+I used **Claude** (Anthropic) as a productivity tool during this project for documentation structuring/formatting and dashboard layout assistance. All SQL, analysis, and data modeling work is my own.
 
 ---
 
@@ -68,10 +64,10 @@ AI was used as an accelerator, not a replacement for analytical thinking. Every 
 
 | Challenge | Solution |
 |-----------|----------|
-| **Cross-platform schema mismatch** — Facebook uses `ad_set_id` + `spend`, Google uses `ad_group_id` + `cost`, TikTok uses `adgroup_id` + `cost` | CTE-per-platform pattern: each CTE maps its platform's columns to standardized names (`ad_group_id`, `cost`), keeping mappings isolated and maintainable |
-| **Division by zero in metrics** — Paused ad groups can have 0 impressions or 0 clicks, breaking CTR/CPC/CPA calculations | BigQuery's `SAFE_DIVIDE` returns NULL instead of erroring, and dashboards render NULL as blank rather than crashing |
-| **Platform-specific metrics** — Facebook has `reach` and `frequency`, Google has `quality_score`, TikTok has video watch percentiles — can't just drop them | Typed NULL columns (`CAST(NULL AS INT64)`) preserve the unified schema while keeping platform-specific data accessible for deep dives |
-| **Dashboard interactivity** — Static charts don't let stakeholders explore the data | Tableau Public with platform/campaign/date filters; plus a standalone HTML dashboard with Chart.js for offline use |
+| **Cross-platform schema mismatch** — each platform uses different column names | CTE-per-platform pattern mapping to standardized names (`ad_group_id`, `cost`) |
+| **Division by zero in metrics** — paused ad groups with 0 impressions/clicks | `SAFE_DIVIDE` returns NULL instead of erroring |
+| **Platform-specific metrics** — each platform has unique fields (reach, quality_score, etc.) | Typed NULL columns preserve the unified schema while keeping platform data accessible |
+| **Dashboard interactivity** | Tableau Public + standalone HTML dashboard with Chart.js for offline use |
 
 ---
 
@@ -152,12 +148,11 @@ Open dashboard/cross_platform_dashboard.html locally
 
 | Enhancement | Why It Matters |
 |-------------|---------------|
-| **Automated ETL** — Schedule daily data pulls with Airflow or dbt | Eliminates manual CSV exports; keeps dashboards always current |
-| **Anomaly Detection** — Alert on spend spikes or CTR drops > 2 standard deviations | Catches runaway budgets or broken campaigns before they waste money |
-| **Attribution Modeling** — Cross-platform conversion attribution | Answers "did the TikTok ad influence the Google search conversion?" |
-| **Budget Optimizer** — ML model to recommend optimal budget allocation by platform | Moves from reporting to prescriptive analytics; maximizes ROAS |
-| **Audience Overlap Analysis** — Identify shared audiences across platforms | Reduces wasted impressions from showing the same user ads on all 3 platforms |
-| **dbt Integration** — Migrate SQL to dbt models with built-in tests and docs | Industry-standard transformation layer; version-controlled tests; auto-generated lineage docs |
+| **Automated ETL** with Airflow or dbt | Eliminates manual CSV exports; keeps dashboards current |
+| **Anomaly Detection** on spend/CTR | Catches runaway budgets before they waste money |
+| **Attribution Modeling** | Answers cross-platform conversion influence questions |
+| **Budget Optimizer** (ML) | Moves from reporting to prescriptive analytics |
+| **dbt Integration** | Industry-standard transformation layer with built-in tests |
 
 ---
 

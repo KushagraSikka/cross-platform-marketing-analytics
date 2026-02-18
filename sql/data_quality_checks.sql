@@ -1,29 +1,9 @@
--- =============================================================================
 -- Data Quality Checks — Raw Ad Platform Tables
--- =============================================================================
--- Run these checks BEFORE executing the unified model (unified_model.sql).
--- They validate the 3 raw source tables to catch issues early — before bad
--- data propagates into the unified table and downstream dashboards.
---
--- WHY run DQ checks first?
---   Marketing data comes from 3 different ad platform APIs, each with its own
---   schema, naming conventions, and potential for export errors. Catching
---   problems at the raw layer is cheaper and safer than debugging aggregated
---   metrics after the fact.
---
--- Tables checked:
---   marketing_analytics.raw_facebook_ads   (expected: 110 rows)
---   marketing_analytics.raw_google_ads     (expected: 109 rows)
---   marketing_analytics.raw_tiktok_ads     (expected: 109 rows)
--- =============================================================================
+-- Run BEFORE unified_model.sql to validate the 3 raw source tables.
+-- Tables: raw_facebook_ads (110 rows), raw_google_ads (109), raw_tiktok_ads (109)
 
 
--- =========================================================
--- CHECK 1: Row Counts Per Raw Table
--- =========================================================
--- WHY: Confirms that each CSV was fully loaded into BigQuery.
--- If a row count is off, the CSV upload may have been truncated
--- or a header row was misinterpreted. Expected: FB=110, G=109, TT=109.
+-- CHECK 1: Row counts per table (expect FB=110, G=109, TT=109)
 
 SELECT 'Facebook' AS platform, COUNT(*) AS row_count
 FROM `marketing_analytics.raw_facebook_ads`
@@ -36,13 +16,7 @@ FROM `marketing_analytics.raw_tiktok_ads`
 ORDER BY platform;
 
 
--- =========================================================
--- CHECK 2: NULL Checks — Facebook
--- =========================================================
--- WHY: NULLs in core columns (date, campaign_id, impressions, clicks, spend,
--- conversions) would break joins, aggregations, and calculated metrics like
--- CTR and CPA. Platform-specific NULLs are acceptable only in OTHER
--- platform columns after unification, not in the source table's own fields.
+-- CHECK 2: NULL checks — Facebook
 
 SELECT
   'raw_facebook_ads'                              AS table_name,
@@ -63,9 +37,7 @@ SELECT
 FROM `marketing_analytics.raw_facebook_ads`;
 
 
--- =========================================================
--- CHECK 3: NULL Checks — Google
--- =========================================================
+-- CHECK 3: NULL checks — Google
 
 SELECT
   'raw_google_ads'                                AS table_name,
@@ -87,9 +59,7 @@ SELECT
 FROM `marketing_analytics.raw_google_ads`;
 
 
--- =========================================================
--- CHECK 4: NULL Checks — TikTok
--- =========================================================
+-- CHECK 4: NULL checks — TikTok
 
 SELECT
   'raw_tiktok_ads'                                AS table_name,
@@ -114,13 +84,7 @@ SELECT
 FROM `marketing_analytics.raw_tiktok_ads`;
 
 
--- =========================================================
--- CHECK 5: Duplicate Detection
--- =========================================================
--- WHY: A duplicate (date + campaign_id + ad_group_id) row means the same
--- ad group's performance was counted twice. This inflates spend, impressions,
--- and conversions — making budget decisions unreliable. Duplicates can slip in
--- when a CSV is exported with overlapping date ranges or appended twice.
+-- CHECK 5: Duplicate detection (date + campaign_id + ad_group_id)
 
 -- Facebook duplicates
 SELECT
@@ -153,12 +117,7 @@ HAVING COUNT(*) > 1
 ORDER BY occurrences DESC;
 
 
--- =========================================================
--- CHECK 6: Date Range Validation
--- =========================================================
--- WHY: The assignment specifies January 2024 data. Any dates outside that
--- window indicate a data export error or mixed-period data that would skew
--- month-over-month analysis and the dashboard's date filters.
+-- CHECK 6: Date range validation (all data should be January 2024)
 
 SELECT
   'Facebook' AS platform,
@@ -185,13 +144,7 @@ FROM `marketing_analytics.raw_tiktok_ads`
 ORDER BY platform;
 
 
--- =========================================================
--- CHECK 7: Negative Value Checks
--- =========================================================
--- WHY: Impressions, clicks, spend, and conversions must be >= 0.
--- Negative values can appear from API corrections (e.g., fraud adjustments)
--- that weren't filtered out during export. Negative spend especially
--- breaks CPC/CPA calculations and misleads budget reporting.
+-- CHECK 7: Negative value checks (impressions, clicks, spend, conversions must be >= 0)
 
 SELECT
   'Facebook' AS platform,
@@ -219,13 +172,7 @@ FROM `marketing_analytics.raw_tiktok_ads`
 ORDER BY platform;
 
 
--- =========================================================
--- CHECK 8: Logical Consistency — Clicks <= Impressions
--- =========================================================
--- WHY: A click cannot happen without an impression. If clicks > impressions,
--- the data was likely corrupted, or the platform is counting differently
--- (e.g., unique vs. total). Either way, it needs investigation before
--- CTR calculations can be trusted.
+-- CHECK 8: Clicks should not exceed impressions
 
 SELECT
   'Facebook' AS platform,
@@ -244,13 +191,7 @@ FROM `marketing_analytics.raw_tiktok_ads`
 ORDER BY platform;
 
 
--- =========================================================
--- CHECK 9: Logical Consistency — Conversions <= Clicks
--- =========================================================
--- WHY: In standard last-click attribution, a conversion requires a click.
--- Conversions > clicks may indicate view-through attribution is mixed in,
--- or the conversion window spans outside the reporting period.
--- Either way, flag it so the analyst knows the attribution model in use.
+-- CHECK 9: Conversions should not exceed clicks (last-click attribution)
 
 SELECT
   'Facebook' AS platform,
@@ -269,13 +210,7 @@ FROM `marketing_analytics.raw_tiktok_ads`
 ORDER BY platform;
 
 
--- =========================================================
--- CHECK 10: Spend Sanity — No Single-Day Outliers > $10K
--- =========================================================
--- WHY: A single ad group spending > $10K in one day is unusual for most
--- campaigns at this scale (total monthly spend across all platforms is ~$50K).
--- Outliers like this often indicate a runaway budget, a data entry error,
--- or an incorrect currency. Flagging them early prevents inflated aggregates.
+-- CHECK 10: Spend outliers — flag any single-day ad group spend > $10K
 
 SELECT 'Facebook' AS platform, date, campaign_id, ad_set_id AS ad_group_id, spend AS cost
 FROM `marketing_analytics.raw_facebook_ads`
@@ -291,13 +226,7 @@ WHERE cost > 10000
 ORDER BY cost DESC;
 
 
--- =========================================================
--- CHECK 11: Google Quality Score — Range 1 to 10
--- =========================================================
--- WHY: Google Ads quality_score is always an integer between 1 and 10.
--- Values outside this range indicate a data export bug or mismatched column.
--- Quality score affects ad rank and CPC, so it must be accurate for
--- any optimization analysis.
+-- CHECK 11: Google quality_score should be between 1 and 10
 
 SELECT
   COUNT(*) AS total_rows,
@@ -308,13 +237,7 @@ SELECT
 FROM `marketing_analytics.raw_google_ads`;
 
 
--- =========================================================
--- CHECK 12: Facebook Engagement Rate — Range 0 to 1
--- =========================================================
--- WHY: Engagement rate is a ratio (engagements / impressions), so it should
--- be between 0 and 1 (i.e., 0% to 100%). Values > 1 suggest the metric
--- was reported as a percentage (e.g., 4.5 instead of 0.045) or that
--- engagements were miscounted.
+-- CHECK 12: Facebook engagement_rate should be between 0 and 1
 
 SELECT
   COUNT(*) AS total_rows,
@@ -325,12 +248,7 @@ SELECT
 FROM `marketing_analytics.raw_facebook_ads`;
 
 
--- =========================================================
--- CHECK 13: Google Search Impression Share — Range 0 to 1
--- =========================================================
--- WHY: Search impression share is a percentage (0 to 1) showing how often
--- your ads appeared vs. total eligible impressions. Values outside this
--- range indicate the data wasn't exported as a decimal.
+-- CHECK 13: Google search_impression_share should be between 0 and 1
 
 SELECT
   COUNT(*) AS total_rows,
@@ -339,15 +257,3 @@ SELECT
   MAX(search_impression_share) AS max_sis,
   ROUND(AVG(search_impression_share), 4) AS avg_sis
 FROM `marketing_analytics.raw_google_ads`;
-
-
--- =========================================================
--- SUMMARY
--- =========================================================
--- If all checks above return 0 anomalies / expected row counts:
---   ✅ Data is clean — proceed to unified_model.sql
---
--- If any check flags issues:
---   🔍 Investigate the raw CSV before re-loading
---   📝 Document the finding and any remediation
--- =============================================================================

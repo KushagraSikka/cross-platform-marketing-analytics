@@ -1,77 +1,36 @@
--- =============================================================================
 -- Unified Ads Performance Model
--- =============================================================================
--- Combines Facebook, Google, and TikTok advertising data into a single
--- standardized table for cross-platform analysis.
---
--- Prerequisites:
---   Dataset: marketing_analytics
---   Raw tables: raw_facebook_ads, raw_google_ads, raw_tiktok_ads
---
+-- Combines Facebook, Google, and TikTok data into one standardized table.
 -- Output: marketing_analytics.unified_ads_performance
---
--- WHY this approach?
---   Marketing teams need a single source of truth to compare performance
---   across ad platforms. Each platform uses different column names, date
---   formats, and metrics. This script normalizes everything into one
---   table so dashboards and analytics queries don't need platform-specific
---   logic — they just query unified_ads_performance.
--- =============================================================================
 
 CREATE OR REPLACE TABLE `marketing_analytics.unified_ads_performance` AS
 
--- WHY CTE-per-platform (not one big CASE WHEN)?
---   Each platform has a unique source schema (different column names, different
---   platform-specific metrics). Separate CTEs keep each platform's mapping
---   self-contained and easy to debug. If Google changes a column name
---   tomorrow, only the google CTE needs updating — Facebook and TikTok
---   are untouched. This also makes code reviews easier: each CTE reads
---   like a mini-transformation for one platform.
-
 WITH facebook AS (
   SELECT
-    -- WHY PARSE_DATE? Raw CSVs store dates as strings ('2024-01-15').
-    -- Explicit parsing ensures BigQuery treats them as DATE type, enabling
-    -- date arithmetic, BETWEEN filters, and proper sorting in dashboards.
     PARSE_DATE('%Y-%m-%d', date)                      AS date,
     'Facebook'                                        AS platform,
     campaign_id,
     campaign_name,
-    -- WHY alias ad_set_id → ad_group_id? Facebook calls them "ad sets",
-    -- Google calls them "ad groups", TikTok calls them "adgroups".
-    -- Standardizing to ad_group_id lets downstream queries use one column
-    -- name regardless of platform, eliminating CASE WHEN logic everywhere.
-    ad_set_id                                         AS ad_group_id,
+    ad_set_id                                         AS ad_group_id,    -- Facebook calls these "ad sets"
     ad_set_name                                       AS ad_group_name,
     impressions,
     clicks,
-    -- WHY alias spend → cost? Facebook uses "spend", Google/TikTok use "cost".
-    -- Standardizing to "cost" as the universal name for ad expenditure.
-    spend                                             AS cost,
+    spend                                             AS cost,           -- Standardize to "cost"
     conversions,
 
-    -- Facebook-specific columns
+    -- Facebook-specific
     video_views                                       AS fb_video_views,
     engagement_rate                                   AS fb_engagement_rate,
     reach                                             AS fb_reach,
     frequency                                         AS fb_frequency,
 
-    -- WHY typed NULLs for other platforms' columns?
-    -- UNION ALL requires identical column counts and compatible types across
-    -- all SELECTs. By casting NULLs to the correct type (FLOAT64, INT64),
-    -- we preserve the schema so platform-specific analysis still works.
-    -- For example, a query filtering on google_quality_score will correctly
-    -- return only Google rows (non-NULL), while Facebook/TikTok rows are
-    -- naturally excluded.
-
-    -- Google-specific columns (NULL for Facebook)
+    -- Google-specific (NULL for Facebook)
     CAST(NULL AS FLOAT64)                             AS google_conversion_value,
     CAST(NULL AS FLOAT64)                             AS google_ctr,
     CAST(NULL AS FLOAT64)                             AS google_avg_cpc,
     CAST(NULL AS INT64)                               AS google_quality_score,
     CAST(NULL AS FLOAT64)                             AS google_search_impression_share,
 
-    -- TikTok-specific columns (NULL for Facebook)
+    -- TikTok-specific (NULL for Facebook)
     CAST(NULL AS INT64)                               AS tt_video_views,
     CAST(NULL AS INT64)                               AS tt_video_watch_25,
     CAST(NULL AS INT64)                               AS tt_video_watch_50,
@@ -97,20 +56,17 @@ google AS (
     cost,
     conversions,
 
-    -- Facebook-specific columns (NULL for Google)
     CAST(NULL AS INT64)                               AS fb_video_views,
     CAST(NULL AS FLOAT64)                             AS fb_engagement_rate,
     CAST(NULL AS INT64)                               AS fb_reach,
     CAST(NULL AS FLOAT64)                             AS fb_frequency,
 
-    -- Google-specific columns
     conversion_value                                  AS google_conversion_value,
     ctr                                               AS google_ctr,
     avg_cpc                                           AS google_avg_cpc,
     quality_score                                     AS google_quality_score,
     search_impression_share                           AS google_search_impression_share,
 
-    -- TikTok-specific columns (NULL for Google)
     CAST(NULL AS INT64)                               AS tt_video_views,
     CAST(NULL AS INT64)                               AS tt_video_watch_25,
     CAST(NULL AS INT64)                               AS tt_video_watch_50,
@@ -136,20 +92,17 @@ tiktok AS (
     cost,
     conversions,
 
-    -- Facebook-specific columns (NULL for TikTok)
     CAST(NULL AS INT64)                               AS fb_video_views,
     CAST(NULL AS FLOAT64)                             AS fb_engagement_rate,
     CAST(NULL AS INT64)                               AS fb_reach,
     CAST(NULL AS FLOAT64)                             AS fb_frequency,
 
-    -- Google-specific columns (NULL for TikTok)
     CAST(NULL AS FLOAT64)                             AS google_conversion_value,
     CAST(NULL AS FLOAT64)                             AS google_ctr,
     CAST(NULL AS FLOAT64)                             AS google_avg_cpc,
     CAST(NULL AS INT64)                               AS google_quality_score,
     CAST(NULL AS FLOAT64)                             AS google_search_impression_share,
 
-    -- TikTok-specific columns
     video_views                                       AS tt_video_views,
     video_watch_25                                    AS tt_video_watch_25,
     video_watch_50                                    AS tt_video_watch_50,
@@ -162,13 +115,6 @@ tiktok AS (
   FROM `marketing_analytics.raw_tiktok_ads`
 ),
 
--- WHY UNION ALL (not UNION)?
---   UNION removes duplicates by comparing every column in every row — an
---   expensive full-table sort+dedup. UNION ALL simply appends rows, which is:
---   1. Faster — no dedup overhead on 328 rows (and critical at scale).
---   2. Correct — we WANT all rows. A Facebook row and a Google row are never
---      true duplicates (different platform column), and same-platform
---      duplicates were already checked in data_quality_checks.sql.
 unioned AS (
   SELECT * FROM facebook
   UNION ALL
@@ -179,30 +125,17 @@ unioned AS (
 
 SELECT
   *,
-
-  -- WHY SAFE_DIVIDE? Standard division (clicks / impressions) throws a
-  -- division-by-zero error if impressions = 0 (e.g., a paused ad group
-  -- that accrued cost but no impressions). SAFE_DIVIDE returns NULL instead,
-  -- which dashboards handle gracefully (blank cell vs. broken query).
   ROUND(SAFE_DIVIDE(clicks, impressions), 6)          AS calc_ctr,
   ROUND(SAFE_DIVIDE(cost, clicks), 2)                 AS calc_cpc,
-  ROUND(SAFE_DIVIDE(cost, conversions), 2)            AS calc_cpa,
+  ROUND(SAFE_DIVIDE(cost, conversions), 2)            AS calc_cpa,            -- Returns NULL on div-by-zero
   ROUND(SAFE_DIVIDE(conversions, clicks), 6)          AS calc_conversion_rate
 
 FROM unioned
-
--- WHY ORDER BY date, platform, campaign_id?
---   Time-series ordering (date first) is the most natural sort for marketing
---   data — analysts scan day-by-day trends. Platform second groups each day's
---   data by source, and campaign_id third provides deterministic ordering
---   within a platform-day for reproducible results.
 ORDER BY date, platform, campaign_id
 ;
 
 
--- =============================================================================
--- Verification Queries (run these after creating the table)
--- =============================================================================
+-- Verification queries (run after creating the table)
 
 -- 1. Row count by platform (expect ~110 Facebook, ~109 Google, ~109 TikTok)
 SELECT
@@ -212,7 +145,7 @@ FROM `marketing_analytics.unified_ads_performance`
 GROUP BY platform
 ORDER BY platform;
 
--- 2. Total cost per platform (cross-check against raw tables)
+-- 2. Total cost per platform
 SELECT
   platform,
   ROUND(SUM(cost), 2)          AS total_cost,
@@ -223,7 +156,7 @@ FROM `marketing_analytics.unified_ads_performance`
 GROUP BY platform
 ORDER BY platform;
 
--- 3. Check for NULLs in core columns
+-- 3. NULL check on core columns
 SELECT
   COUNTIF(date IS NULL)          AS null_dates,
   COUNTIF(platform IS NULL)      AS null_platforms,
